@@ -6,6 +6,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Log;
+use Auth;
 
 class AuthController extends Controller
 {
@@ -48,9 +50,21 @@ class AuthController extends Controller
 
 
     
-    public function logout(Request $request): \Illuminate\Http\JsonResponse
+    public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out successfully']);
+        // Debugging: Check if the user is logged in
+        Log::info('Logging out user: ', ['user' => Auth::guard('web')->user()]);
+    
+        // Log out the user using the 'web' guard
+        Auth::guard('web')->logout();
+    
+        // Debugging: Log session invalidate
+        Log::info('Session invalidated and token regenerated');
+    
+        // Invalidate the session and regenerate CSRF token
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+    
+        return response()->json(['message' => 'Successfully logged out']);
     }
 }

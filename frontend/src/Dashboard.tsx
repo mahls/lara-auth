@@ -43,12 +43,12 @@ const Dashboard: React.FC = () => {
                 .split('; ')
                 .find(row => row.startsWith('XSRF-TOKEN='))
                 ?.split('=')[1];
-
+    
             if (!csrfToken) {
                 console.error('CSRF token is missing');
                 return;
             }
-
+    
             // Send the logout request with CSRF token
             await axios.post('http://localhost:8000/logout', {}, {
                 withCredentials: true,
@@ -57,11 +57,13 @@ const Dashboard: React.FC = () => {
                     'Accept': 'application/json',  // Make sure the backend knows you expect JSON response
                 }
             });
-
-            // Redirect the user to the login page after successful logout
+    
+            // Clear any tokens from localStorage/sessionStorage
             localStorage.removeItem('token');
             sessionStorage.removeItem('token');
-            navigate('/login');
+    
+            // Redirect the user to the homepage ('/')
+            navigate('/');  // Redirect to home page (root)
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
                 // Handling AxiosError specifically
@@ -72,6 +74,7 @@ const Dashboard: React.FC = () => {
             }
         }
     };
+    
 
     return (
         <div>
