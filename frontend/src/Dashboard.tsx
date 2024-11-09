@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 // Set global defaults for Axios
@@ -7,7 +7,6 @@ axios.defaults.withCredentials = true;
 axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
 axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
 axios.defaults.headers.common['Accept'] = 'application/json';
-
 
 const Dashboard: React.FC = () => {
     const [user, setUser] = useState<{ name: string } | null>(null);  // State to hold the user info
@@ -21,8 +20,14 @@ const Dashboard: React.FC = () => {
                 // Make an API call to fetch user data
                 const response = await axios.get('http://localhost:8000/user');
                 setUser(response.data);  // Set user data in state
-            } catch (error) {
-                setError('Failed to fetch user data');
+            } catch (error: unknown) {
+                if (axios.isAxiosError(error)) {
+                    // Handling AxiosError specifically
+                    setError(`Error fetching user data: ${error.response?.data?.message || error.message}`);
+                } else {
+                    // Handling other types of errors
+                    setError('Failed to fetch user data');
+                }
                 console.error(error);
             }
         };
@@ -38,12 +43,12 @@ const Dashboard: React.FC = () => {
                 .split('; ')
                 .find(row => row.startsWith('XSRF-TOKEN='))
                 ?.split('=')[1];
-    
+
             if (!csrfToken) {
                 console.error('CSRF token is missing');
                 return;
             }
-    
+
             // Send the logout request with CSRF token
             await axios.post('http://localhost:8000/logout', {}, {
                 withCredentials: true,
@@ -52,19 +57,21 @@ const Dashboard: React.FC = () => {
                     'Accept': 'application/json',  // Make sure the backend knows you expect JSON response
                 }
             });
-    
+
             // Redirect the user to the login page after successful logout
             localStorage.removeItem('token');
             sessionStorage.removeItem('token');
             navigate('/login');
-        } catch (error) {
-            console.error('Logout failed:', error);
-            if (error.response) {
-                console.log(error.response);  // Log the full error response for further investigation
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error)) {
+                // Handling AxiosError specifically
+                console.error('Logout failed:', error.response?.data?.message || error.message);
+            } else {
+                // Handling other types of errors
+                console.error('Logout failed:', error);
             }
         }
     };
-    
 
     return (
         <div>
